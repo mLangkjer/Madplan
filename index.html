@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="da">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4CAF50">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1046/1046784.png">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +15,11 @@
       --card-bg: #ffffff;
       --text: #333;
     }
-
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: var(--bg);
