@@ -262,7 +262,8 @@
           <input type="text" id="title" placeholder="Retten navn (f.eks. Lasagne)" required>
           <input type="url" id="link" placeholder="Link til opskrift på nettet (valgfrit)">
           <input type="url" id="imageUrl" placeholder="Billede-URL (valgfrit)">
-          <textarea id="ingredients" rows="4" placeholder="Ingredienser (én pr. linje):&#10;500g oksekød&#10;1 løg" required></textarea>
+          <textarea id="ingredients" rows="3" placeholder="Ingredienser (én pr. linje):&#10;500g oksekød&#10;1 løg" required></textarea>
+          <textarea id="instructions" rows="3" placeholder="Fremgangsmåde (valgfrit)..."></textarea>
           <button type="submit">Gem i Bibliotek</button>
         </form>
       </div>
@@ -286,7 +287,7 @@
       <div class="card">
         <h2>⚙️ Google Gemini API Indstillinger</h2>
         <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
-          Indtast din Google Gemini API-nøgle for at bruge AI-scanningen. Nøglen gemmes kun lokalt på din telefon.
+          Indtast din Google Gemini API-nøgle for at bruge AI-scanningen. Nøglen gemmes kun lokalt i browseren.
         </p>
         <label for="apiKeyInput" style="font-weight: bold; font-size: 14px;">Gemini API Key:</label>
         <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
@@ -305,7 +306,10 @@
       <img id="modalImage" src="" alt="" style="width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;">
       <h3 style="margin-bottom: 5px;">Ingredienser:</h3>
       <ul id="modalIngredients" style="padding-left: 20px; margin-bottom: 15px;"></ul>
-      <div id="modalLinkContainer" style="margin-bottom: 15px;"></div>
+      
+      <div id="modalInstructionsContainer"></div>
+      <div id="modalLinkContainer" style="margin-top: 15px; margin-bottom: 15px;"></div>
+      
       <button onclick="closeModal()" style="background-color: #7f8c8d;">Luk</button>
     </div>
   </div>
@@ -334,7 +338,7 @@
       if (key) {
         localStorage.setItem('gemini_api_key', key);
         updateApiStatus();
-        alert('Gemini API-nøgle gemt sikkert på telefonen!');
+        alert('Gemini API-nøgle gemt!');
       }
     }
 
@@ -362,8 +366,10 @@
 
     /* GEMINI API PROCESSING LOGIK */
     async function processGeminiRecipe() {
-      const apiKey = localStorage.getItem('gemini_api_key');
-      if (!apiKey) {
+      // Henter fra localStorage, ELLER brug din indtastede nøgle her hvis du har skrevet den i koden:
+      const apiKey = localStorage.getItem('gemini_api_key') || "DIN_GEMINI_API_NØGLE_HER";
+
+      if (!apiKey || apiKey === "DIN_GEMINI_API_NØGLE_HER") {
         alert('Gå til "⚙️ API-nøgle" fanen og indtast din Gemini API-nøgle først.');
         return;
       }
@@ -388,12 +394,12 @@
 Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, ingen ekstra tekst):
 {
   "title": "Opskriftens navn",
-  "ingredients": ["100g mel", "2 æg", "500ml mælk"]
+  "ingredients": ["100g mel", "2 æg", "500ml mælk"],
+  "instructions": "1. Bland mel og æg.\\n2. Tilsæt mælk og pisk godt.\\n3. Steg på panden."
 }`;
 
         parts.push({ text: systemPrompt + (text ? `\n\nHer er teksten til opskriften:\n${text}` : "") });
 
-        // Hvis der er et billede, tilføj det i Gemini-format (inlineData)
         if (fileInput.files.length > 0) {
           const file = fileInput.files[0];
           const base64Data = await convertBase64Clean(file);
@@ -405,14 +411,13 @@ Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, inge
           });
         }
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+        // Bruger gemini-1.5-flash endpointet
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: parts }]
-          })
+          body: JSON.stringify({ contents: [{ parts: parts }] })
         });
 
         const data = await response.json();
@@ -431,7 +436,8 @@ Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, inge
           title: parsedRecipe.title || "Gemini Opskrift",
           link: "",
           image: "https://via.placeholder.com/300x150?text=Gemini+Opskrift",
-          ingredients: parsedRecipe.ingredients || []
+          ingredients: parsedRecipe.ingredients || [],
+          instructions: parsedRecipe.instructions || "Ingen fremgangsmåde angivet."
         };
 
         recipes.push(newRecipe);
@@ -439,7 +445,7 @@ Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, inge
 
         document.getElementById('aiTextInput').value = '';
         fileInput.value = '';
-        status.innerText = '✅ Opskrift scannet og gemt i biblioteket!';
+        status.innerText = '✅ Opskrift og fremgangsmåde gemt i biblioteket!';
         renderAll();
 
       } catch (err) {
@@ -450,7 +456,6 @@ Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, inge
       }
     }
 
-    // Konverter billede til ren base64-streng uden metadata-prefix
     function convertBase64Clean(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -506,6 +511,14 @@ Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, inge
       const ingList = document.getElementById('modalIngredients');
       ingList.innerHTML = recipe.ingredients.map(i => `<li>${i}</li>`).join('');
 
+      const instrContainer = document.getElementById('modalInstructionsContainer');
+      if (recipe.instructions) {
+        instrContainer.innerHTML = `<h3 style="margin-bottom: 5px;">Fremgangsmåde:</h3>
+                                     <p style="white-space: pre-line; font-size: 14px; line-height: 1.5; margin-top:0;">${recipe.instructions}</p>`;
+      } else {
+        instrContainer.innerHTML = '';
+      }
+
       const linkContainer = document.getElementById('modalLinkContainer');
       linkContainer.innerHTML = recipe.link ? `<a href="${recipe.link}" target="_blank" style="color: #3498db;">Åbn original opskrift på nettet 🔗</a>` : '';
 
@@ -523,7 +536,8 @@ Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, inge
         title: document.getElementById('title').value,
         link: document.getElementById('link').value,
         image: document.getElementById('imageUrl').value || 'https://via.placeholder.com/300x150?text=Ingen+Billede',
-        ingredients: document.getElementById('ingredients').value.split('\n').filter(i => i.trim() !== '')
+        ingredients: document.getElementById('ingredients').value.split('\n').filter(i => i.trim() !== ''),
+        instructions: document.getElementById('instructions').value
       };
 
       recipes.push(newRecipe);
