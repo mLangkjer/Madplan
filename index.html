@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Min Madplan</title>
   
-  <!-- Mobil- og PWA-konfiguration -->
   <meta name="theme-color" content="#4CAF50">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Madplan">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1046/1046784.png">
-  
-  <!-- Manifest indbygget direkte i HTML -->
   <link rel="manifest" href='data:application/manifest+json,{"name":"Min Madplan App","short_name":"Madplan","start_url":"./index.html","display":"standalone","background_color":"#f4f6f8","theme_color":"#4CAF50","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/1046/1046784.png","sizes":"512x512","type":"image/png"}]}'>
 
   <style>
@@ -38,14 +35,14 @@
       margin: 0 auto 15px auto;
       display: flex;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .tab-btn {
       flex: 1;
-      max-width: 200px;
-      padding: 12px 15px;
-      font-size: 15px;
+      max-width: 150px;
+      padding: 10px 8px;
+      font-size: 14px;
       background: #e0e0e0;
       color: #333;
       border: none;
@@ -104,7 +101,6 @@
 
     button:hover { background-color: var(--primary-hover); }
 
-    /* Ugeplan Styling */
     .day-row {
       display: flex;
       align-items: center;
@@ -121,11 +117,7 @@
       font-size: 14px;
     }
 
-    .day-select {
-      flex-grow: 1;
-      margin-bottom: 0;
-      font-size: 14px;
-    }
+    .day-select { flex-grow: 1; margin-bottom: 0; font-size: 14px; }
 
     .view-recipe-btn {
       width: auto;
@@ -136,7 +128,6 @@
       white-space: nowrap;
     }
 
-    /* Bibliotek Grid */
     .library-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -166,10 +157,7 @@
       justify-content: space-between;
     }
 
-    .recipe-card-body h3 {
-      font-size: 14px;
-      margin: 0 0 8px 0;
-    }
+    .recipe-card-body h3 { font-size: 14px; margin: 0 0 8px 0; }
 
     .shopping-list {
       background: #eef9f1;
@@ -178,26 +166,13 @@
       border: 1px solid #c8e6c9;
     }
 
-    .shopping-list ul {
-      padding-left: 20px;
-      margin: 0;
-    }
+    .shopping-list ul { padding-left: 20px; margin: 0; }
+    .shopping-list li { margin-bottom: 6px; font-size: 15px; }
 
-    .shopping-list li {
-      margin-bottom: 6px;
-      font-size: 15px;
-    }
-
-    .extra-item-form {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 15px;
-    }
-
+    .extra-item-form { display: flex; gap: 8px; margin-bottom: 15px; }
     .extra-item-form input { margin-bottom: 0; flex-grow: 1; }
     .extra-item-form button { width: auto; margin-bottom: 0; white-space: nowrap; }
 
-    /* Modal / Popup til Opskrift */
     .modal {
       display: none;
       position: fixed;
@@ -219,6 +194,17 @@
     }
 
     .delete-btn { background: #e74c3c; margin-bottom: 0; }
+    .api-status { font-size: 13px; font-weight: bold; margin-top: 5px; }
+    .status-ok { color: #27ae60; }
+    .status-missing { color: #e74c3c; }
+
+    .ai-box {
+      background: #f0f7ff;
+      border: 1px solid #b6d4fe;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -229,20 +215,18 @@
   <div class="header-nav">
     <button class="tab-btn active" onclick="switchTab('plannerTab', event)">📅 Ugeplan</button>
     <button class="tab-btn" onclick="switchTab('libraryTab', event)">📖 Bibliotek</button>
+    <button class="tab-btn" onclick="switchTab('settingsTab', event)">⚙️ API-nøgle</button>
   </div>
 
   <!-- FANE 1: UGEPLAN & INDKØB -->
   <div id="plannerTab" class="tab-content active">
     <div class="container">
-      
-      <!-- Ugeplanen -->
       <div class="card">
         <h2>Ugens Menu</h2>
         <div id="weekDaysContainer"></div>
         <button onclick="generateShoppingList()" style="margin-top: 10px; background-color: #3498db;">Generer Indkøbsliste 🛒</button>
       </div>
 
-      <!-- Indkøbsliste -->
       <div class="card">
         <h2>Din Indkøbsliste</h2>
         <div class="extra-item-form">
@@ -254,9 +238,26 @@
         </div>
       </div>
 
-      <!-- Opret Opskrift -->
+      <!-- GEMINI AI OPSKRIFT SCANNER -->
       <div class="card" style="grid-column: span 2;">
-        <h2>Opret Ny Opskrift</h2>
+        <h2>✨ Gemini AI Opskrift Scanner</h2>
+        <div class="ai-box">
+          <p style="margin-top: 0; font-size: 14px; color: #444;">
+            Sæt en tekst/opskrift ind, eller tag et billede af en opskrift fra en kogebog eller skærm. Gemini trækker automatisk data ud.
+          </p>
+          
+          <textarea id="aiTextInput" rows="3" placeholder="Indsæt tekst fra en opskrift her..."></textarea>
+          
+          <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">📸 ELLER Tag/upload et billede:</label>
+          <input type="file" id="aiImageInput" accept="image/*" capture="environment" style="background: white;">
+
+          <button id="aiScanBtn" onclick="processGeminiRecipe()" style="background-color: #8e44ad; margin-top: 5px;">
+            ✨ Scan og gem opskrift med Gemini
+          </button>
+          <div id="aiStatus" style="font-size: 13px; font-weight: bold; margin-top: 5px; color: #8e44ad;"></div>
+        </div>
+
+        <h2>Opret Ny Opskrift Manuelt</h2>
         <form id="recipeForm">
           <input type="text" id="title" placeholder="Retten navn (f.eks. Lasagne)" required>
           <input type="url" id="link" placeholder="Link til opskrift på nettet (valgfrit)">
@@ -265,7 +266,6 @@
           <button type="submit">Gem i Bibliotek</button>
         </form>
       </div>
-
     </div>
   </div>
 
@@ -276,6 +276,24 @@
         <h2>Dine Gemte Opskrifter</h2>
         <input type="text" id="searchBar" onkeyup="searchRecipes()" placeholder="🔍 Søg efter opskrift...">
         <div id="libraryGrid" class="library-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FANE 3: API INDSTILLINGER -->
+  <div id="settingsTab" class="tab-content">
+    <div class="container" style="grid-template-columns: 1fr;">
+      <div class="card">
+        <h2>⚙️ Google Gemini API Indstillinger</h2>
+        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+          Indtast din Google Gemini API-nøgle for at bruge AI-scanningen. Nøglen gemmes kun lokalt på din telefon.
+        </p>
+        <label for="apiKeyInput" style="font-weight: bold; font-size: 14px;">Gemini API Key:</label>
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+        <button onclick="saveApiKey()" style="background-color: #27ae60;">Gem API-nøgle</button>
+        <button onclick="clearApiKey()" style="background-color: #e74c3c; margin-top: 5px;">Slet API-nøgle</button>
+        
+        <div id="apiStatusMessage" class="api-status"></div>
       </div>
     </div>
   </div>
@@ -310,7 +328,141 @@
       if(evt) evt.target.classList.add('active');
     }
 
-    // Byg ugeskemaet
+    /* API KEY LOGIK FOR GEMINI */
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (key) {
+        localStorage.setItem('gemini_api_key', key);
+        updateApiStatus();
+        alert('Gemini API-nøgle gemt sikkert på telefonen!');
+      }
+    }
+
+    function clearApiKey() {
+      localStorage.removeItem('gemini_api_key');
+      document.getElementById('apiKeyInput').value = '';
+      updateApiStatus();
+      alert('API-nøgle slettet.');
+    }
+
+    function updateApiStatus() {
+      const key = localStorage.getItem('gemini_api_key');
+      const statusDiv = document.getElementById('apiStatusMessage');
+      const input = document.getElementById('apiKeyInput');
+      
+      if (key) {
+        statusDiv.innerText = 'Status: Gemini API-nøgle er aktiv ✓';
+        statusDiv.className = 'api-status status-ok';
+        input.value = key;
+      } else {
+        statusDiv.innerText = 'Status: Ingen API-nøgle gemt';
+        statusDiv.className = 'api-status status-missing';
+      }
+    }
+
+    /* GEMINI API PROCESSING LOGIK */
+    async function processGeminiRecipe() {
+      const apiKey = localStorage.getItem('gemini_api_key');
+      if (!apiKey) {
+        alert('Gå til "⚙️ API-nøgle" fanen og indtast din Gemini API-nøgle først.');
+        return;
+      }
+
+      const text = document.getElementById('aiTextInput').value.trim();
+      const fileInput = document.getElementById('aiImageInput');
+      const status = document.getElementById('aiStatus');
+      const btn = document.getElementById('aiScanBtn');
+
+      if (!text && fileInput.files.length === 0) {
+        alert('Indsæt venligst enten tekst eller vælg/tag et billede.');
+        return;
+      }
+
+      btn.disabled = true;
+      status.innerText = '⏳ Analyserer opskrift med Gemini AI... Vent venligst.';
+
+      try {
+        let parts = [];
+
+        const systemPrompt = `Du er en mad-assistent. Analyser den medfølgende tekst eller billede af en opskrift. 
+Returner UDELUKKENDE et gyldigt JSON-objekt i dette format (ingen markdown, ingen ekstra tekst):
+{
+  "title": "Opskriftens navn",
+  "ingredients": ["100g mel", "2 æg", "500ml mælk"]
+}`;
+
+        parts.push({ text: systemPrompt + (text ? `\n\nHer er teksten til opskriften:\n${text}` : "") });
+
+        // Hvis der er et billede, tilføj det i Gemini-format (inlineData)
+        if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const base64Data = await convertBase64Clean(file);
+          parts.push({
+            inline_data: {
+              mime_type: file.type || "image/jpeg",
+              data: base64Data
+            }
+          });
+        }
+
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: parts }]
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error.message);
+        }
+
+        let rawText = data.candidates[0].content.parts[0].text.trim();
+        rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        const parsedRecipe = JSON.parse(rawText);
+
+        const newRecipe = {
+          id: Date.now(),
+          title: parsedRecipe.title || "Gemini Opskrift",
+          link: "",
+          image: "https://via.placeholder.com/300x150?text=Gemini+Opskrift",
+          ingredients: parsedRecipe.ingredients || []
+        };
+
+        recipes.push(newRecipe);
+        localStorage.setItem('my_recipes', JSON.stringify(recipes));
+
+        document.getElementById('aiTextInput').value = '';
+        fileInput.value = '';
+        status.innerText = '✅ Opskrift scannet og gemt i biblioteket!';
+        renderAll();
+
+      } catch (err) {
+        console.error(err);
+        status.innerText = '❌ Fejl under scanning: ' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Konverter billede til ren base64-streng uden metadata-prefix
+    function convertBase64Clean(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const base64String = reader.result.split(',')[1];
+          resolve(base64String);
+        };
+        reader.onerror = error => reject(error);
+      });
+    }
+
     function renderWeekPlan() {
       weekDaysContainer.innerHTML = '';
       days.forEach(day => {
@@ -344,7 +496,6 @@
       renderWeekPlan();
     }
 
-    // Modal / Opskriftvisning
     function openRecipeModal(recipeId) {
       const recipe = recipes.find(r => r.id === recipeId);
       if (!recipe) return;
@@ -365,7 +516,6 @@
       document.getElementById('recipeModal').style.display = 'none';
     }
 
-    // Gem opskrift
     recipeForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const newRecipe = {
@@ -385,6 +535,7 @@
     function renderAll() {
       renderWeekPlan();
       renderLibrary(recipes);
+      updateApiStatus();
     }
 
     function renderLibrary(recipesToRender) {
@@ -459,7 +610,6 @@
       shoppingListContainer.innerHTML = listHTML;
     }
 
-    // Inline Service Worker til offline PWA support
     if ('serviceWorker' in navigator) {
       const swCode = `
         self.addEventListener('install', e => e.waitUntil(caches.open('app-cache').then(c => c.addAll(['./index.html']))));
@@ -470,7 +620,6 @@
       navigator.serviceWorker.register(swUrl).catch(() => {});
     }
 
-    // Opstart
     renderAll();
   </script>
 </body>
